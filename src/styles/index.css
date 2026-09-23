@@ -283,3 +283,12 @@ select{
 .db-setup-details summary{cursor:pointer; color:var(--ink); font-weight:700;}
 .db-setup-details pre{white-space:pre-wrap; overflow:auto; padding:12px; border-radius:8px; background:var(--navy); color:#e9edf2; font-size:12px;}
 @media(max-width:600px){.db-setup-wrap{padding:16px}.db-setup-card{padding:24px}.db-setup-card h1{font-size:27px}}
+
+/* ---------- Per-product barcode print run (BarcodeModal) ---------- */
+.barcode-print-cell{
+  border:1px solid #000; border-radius:2mm; padding:3mm; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  break-inside:avoid; page-break-inside:avoid;
+}
+.barcode-print-cell .barcode-name{font-size:9px; margin-bottom:0;}
+.barcode-print-cell .barcode-price{font-size:10px; margin-top:0;}

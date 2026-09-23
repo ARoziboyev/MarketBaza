@@ -18,6 +18,7 @@ import DatabaseSetup from './components/DatabaseSetup';
 const PAGES = {
   home: Home, stats: Stats, daily: Daily, sell: Sell, credit: Credit,
   add: AddProduct, printer: Printer, sold: Sold, stock: Stock, admin: Admin,
+  barcodes: Barcodes,
 };
 
 function getRoute() {
