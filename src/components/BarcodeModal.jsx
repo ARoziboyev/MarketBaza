@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import JsBarcode from 'jsbarcode';
 import { useData } from '../context/DataContext';
 import { fmt } from '../lib/format';
 import { detectBarcodeFormat, generateEan13 } from '../lib/barcode';
+import { buildBarcodeLabelsEscPosBytes } from '../lib/barcodeDevice';
+import { printViaLocalService } from '../lib/localPrintService';
 
 function BarcodeSvg({ value, width = 1.6, height = 42, fontSize = 12 }) {
   const ref = useRef(null);
@@ -23,7 +25,7 @@ function BarcodeSvg({ value, width = 1.6, height = 42, fontSize = 12 }) {
 }
 
 export default function BarcodeModal({ product, onClose }) {
-  const { updateProduct, toast } = useData();
+  const { settings, updateProduct, toast } = useData();
   // Mahsulotda hali kod bo'lmasa, modal ochilganda bittagina namunaviy kod
   // generatsiya qilinadi (hali bazaga yozilmaydi — faqat "Shtrix-kod chiqarish"
   // bosilganda saqlanadi).
@@ -31,24 +33,15 @@ export default function BarcodeModal({ product, onClose }) {
   const [stage, setStage] = useState('preview'); // 'preview' | 'printing'
   const printCount = Math.max(0, Math.round(product.qty || 0));
 
-  useEffect(() => {
-    if (stage !== 'printing') return undefined;
-    function handleAfterPrint() {
-      setStage('preview');
-      onClose();
-    }
-    window.addEventListener('afterprint', handleAfterPrint);
-    // Barcha yorliqlar DOM'ga chizilishi uchun bir oz kutamiz, keyin chop etamiz.
-    const t = setTimeout(() => window.print(), 250);
-    return () => {
-      window.removeEventListener('afterprint', handleAfterPrint);
-      clearTimeout(t);
-    };
-  }, [stage, onClose]);
+  const printerReady = settings?.conn_type === 'local' && !!settings?.printer_name;
 
   async function handleGenerate() {
     if (printCount <= 0) {
       toast("Ombordagi miqdor 0 — chop etish uchun mahsulot qolmagan");
+      return;
+    }
+    if (!printerReady) {
+      toast('Avval "Chek chiqarish" bo\'limida "Mahalliy chop etish xizmati"ni sozlab, printerni ulang.');
       return;
     }
     if (printCount > 300) {
@@ -59,7 +52,22 @@ export default function BarcodeModal({ product, onClose }) {
       const ok = await updateProduct(product.id, { barcode: previewCode });
       if (!ok) return;
     }
+
     setStage('printing');
+    try {
+      const bytes = buildBarcodeLabelsEscPosBytes({
+        name: product.name,
+        price: fmt(product.price),
+        code: previewCode,
+        count: printCount,
+      });
+      await printViaLocalService(settings.printer_name, bytes);
+      toast(`${printCount} ta shtrix-kod yorlig'i printerga yuborildi`);
+      onClose();
+    } catch (error) {
+      toast('Xatolik: ' + (error?.message || 'Nomaʼlum xato'));
+      setStage('preview');
+    }
   }
 
   return (
@@ -80,8 +88,16 @@ export default function BarcodeModal({ product, onClose }) {
             <span className="mono-num" style={{ fontWeight: 700 }}>{printCount} {product.unit || 'dona'}</span>
           </div>
 
+          {!printerReady && (
+            <div className="hint-box" style={{ marginBottom: 14 }}>
+              Shtrix-kod printerga to'g'ridan-to'g'ri (haqiqiy shtrix-kod sifatida) yuborilishi uchun
+              avval <b>"Chek chiqarish"</b> bo'limida <b>"Mahalliy chop etish xizmati"</b> rejimini
+              sozlab, printeringizni ulang.
+            </div>
+          )}
+
           {stage === 'printing' ? (
-            <div className="hint-box">Chop etishga tayyorlanmoqda — {printCount} ta yorliq yaratilmoqda...</div>
+            <div className="hint-box">Chop etilmoqda — {printCount} ta yorliq printerga yuborilmoqda...</div>
           ) : (
             <div style={{ display: 'flex', gap: 10 }}>
               <button type="button" className="btn btn-outline btn-block" onClick={onClose}>Bekor qilish</button>
@@ -91,18 +107,6 @@ export default function BarcodeModal({ product, onClose }) {
             </div>
           )}
         </div>
-
-        {stage === 'printing' && (
-          <div id="barcode-print-area">
-            {Array.from({ length: printCount }).map((_, i) => (
-              <div className="barcode-print-cell" key={i}>
-                <div className="barcode-name">{product.name}</div>
-                <BarcodeSvg value={previewCode} width={1.4} height={34} fontSize={10} />
-                <div className="barcode-price">{fmt(product.price)}</div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

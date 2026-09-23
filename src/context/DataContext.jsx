@@ -210,10 +210,46 @@ export function DataProvider({ children }) {
     return true;
   }, [fetchSettings, toast]);
 
+  /*
+    MA'LUMOTLARNI TOZALASH (Boshliq paneli / Nasiya arxivi uchun)
+  */
+  const clearAllProducts = useCallback(async () => {
+    const { error } = await supabase.from('products').delete().not('id', 'is', null);
+    if (error) { toast('Xatolik: ' + error.message); return false; }
+    await fetchProducts();
+    toast("Barcha mahsulotlar o'chirildi");
+    return true;
+  }, [fetchProducts, toast]);
+
+  const clearAllSales = useCallback(async () => {
+    const { error } = await supabase.from('sales').delete().not('id', 'is', null);
+    if (error) { toast('Xatolik: ' + error.message); return false; }
+    await fetchSales();
+    toast("Barcha savdo tarixi o'chirildi");
+    return true;
+  }, [fetchSales, toast]);
+
+  const clearCreditArchive = useCallback(async () => {
+    const { error } = await supabase.from('sales').delete().eq('type', 'nasiya').eq('status', 'yopilgan');
+    if (error) { toast('Xatolik: ' + error.message); return false; }
+    await fetchSales();
+    toast("Nasiya arxivi tozalandi");
+    return true;
+  }, [fetchSales, toast]);
+
+  const resetPrinterSettings = useCallback(async () => {
+    const { error } = await supabase.from('printer_settings').delete().eq('id', 1);
+    if (error) { toast('Xatolik: ' + error.message); return false; }
+    setSettings({ printer_name: '', conn_type: 'usb', address: '', saved_at: null });
+    toast('Printer sozlamalari tozalandi');
+    return true;
+  }, [toast]);
+
   const value = {
     products, sales, settings, loading, dbStatus, dbError,
     addProduct, updateProduct, deleteProduct, setStockQty, adjustStock,
     addSale, markCreditPaid, savePrinterSettings,
+    clearAllProducts, clearAllSales, clearCreditArchive, resetPrinterSettings,
     toast, toastMsg, toastVisible,
   };
 

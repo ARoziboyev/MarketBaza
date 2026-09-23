@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { fmt } from '../lib/format';
 import { periodCount, periodProfit, periodRevenue, profitOfSale, topDemand } from '../lib/stats';
+import ClearDataModal from '../components/ClearDataModal';
 
 export default function Admin() {
   const { products, sales } = useData();
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const allTimeRevenue = sales.reduce((s, x) => s + x.total, 0);
   const allTimeProfit = sales.reduce((s, x) => s + profitOfSale(x), 0);
@@ -21,6 +24,9 @@ export default function Admin() {
           <h1 className="page-title">Boshliq paneli</h1>
           <div className="page-sub">Do'kon bo'yicha umumiy hisobot</div>
         </div>
+        <button className="btn btn-outline btn-sm" onClick={() => setShowClearModal(true)}>
+          Tarixni tozalash
+        </button>
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: 16 }}>
@@ -63,6 +69,8 @@ export default function Admin() {
           <a className="btn btn-outline" href="#add">Mahsulot qo'shish</a>
         </div>
       </div>
+
+      {showClearModal && <ClearDataModal onClose={() => setShowClearModal(false)} />}
     </>
   );
 }

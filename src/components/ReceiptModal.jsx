@@ -3,16 +3,21 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { fmt, fmtDate } from '../lib/format';
 import { receiptText } from '../lib/receipt';
+import { useData } from '../context/DataContext';
 
 import {
   isReceiptDeviceConnected,
   printReceiptToDevice,
+  buildReceiptEscPosBytes,
 } from '../lib/receiptDevice';
+
+import { printViaLocalService } from '../lib/localPrintService';
 
 export default function ReceiptModal({
   sale,
   onClose,
 }) {
+  const { settings } = useData();
   const [printing, setPrinting] = useState(false);
   const [printMessage, setPrintMessage] = useState('');
 
@@ -24,6 +29,32 @@ export default function ReceiptModal({
   const isCredit = sale.type === 'nasiya';
 
   async function handleDevicePrint() {
+    /*
+      "Mahalliy chop etish xizmati" rejimi tanlangan bo'lsa,
+      WebUSB/Serial holatini tekshirmasdan to'g'ridan-to'g'ri
+      server.js orqali yuboramiz — chunki bu rejimda "ulanish"
+      shunchaki xizmat ishga tushganini va printer tanlanganini
+      bildiradi, WebUSB obyekti umuman ishlatilmaydi.
+    */
+    if (settings?.conn_type === 'local') {
+      if (!settings?.printer_name) {
+        setPrintMessage("Xatolik: avval Chek chiqarish bo'limida printerni tanlang.");
+        return;
+      }
+      setPrinting(true);
+      setPrintMessage('');
+      try {
+        const bytes = buildReceiptEscPosBytes(sale);
+        await printViaLocalService(settings.printer_name, bytes);
+        setPrintMessage('Chek printerga yuborildi.');
+      } catch (error) {
+        setPrintMessage('Xatolik: ' + error.message);
+      } finally {
+        setPrinting(false);
+      }
+      return;
+    }
+
     if (!isReceiptDeviceConnected()) {
       setPrintMessage(
         "Avval Chek chiqarish apparati bo'limidan apparatni ulang."

@@ -29,17 +29,11 @@ let connectionType = null;
 ========================================================= */
 
 export function isWebUSBSupported() {
-  return (
-    typeof navigator !== 'undefined' &&
-    'usb' in navigator
-  );
+  return typeof navigator !== "undefined" && "usb" in navigator;
 }
 
 export function isWebSerialSupported() {
-  return (
-    typeof navigator !== 'undefined' &&
-    'serial' in navigator
-  );
+  return typeof navigator !== "undefined" && "serial" in navigator;
 }
 
 /* =========================================================
@@ -47,14 +41,11 @@ export function isWebSerialSupported() {
 ========================================================= */
 
 export function isReceiptDeviceConnected() {
-  if (connectionType === 'usb') {
-    return (
-      usbDevice !== null &&
-      usbDevice.opened === true
-    );
+  if (connectionType === "usb") {
+    return usbDevice !== null && usbDevice.opened === true;
   }
 
-  if (connectionType === 'serial') {
+  if (connectionType === "serial") {
     return (
       serialPort !== null &&
       serialPort.readable !== null &&
@@ -71,20 +62,15 @@ export function isReceiptDeviceConnected() {
 
 function findUsbOutputEndpoint(device) {
   if (!device.configuration) {
-    throw new Error(
-      'USB konfiguratsiyasi topilmadi.'
-    );
+    throw new Error("USB konfiguratsiyasi topilmadi.");
   }
 
   for (const iface of device.configuration.interfaces) {
     for (const alternate of iface.alternates) {
       const outEndpoint = alternate.endpoints.find(
         (endpoint) =>
-          endpoint.direction === 'out' &&
-          (
-            endpoint.type === 'bulk' ||
-            endpoint.type === 'interrupt'
-          )
+          endpoint.direction === "out" &&
+          (endpoint.type === "bulk" || endpoint.type === "interrupt")
       );
 
       if (outEndpoint) {
@@ -98,9 +84,7 @@ function findUsbOutputEndpoint(device) {
     }
   }
 
-  throw new Error(
-    'Printerning USB OUT endpointi topilmadi.'
-  );
+  throw new Error("Printerning USB OUT endpointi topilmadi.");
 }
 
 /* =========================================================
@@ -109,9 +93,7 @@ function findUsbOutputEndpoint(device) {
 
 async function connectUSB() {
   if (!isWebUSBSupported()) {
-    throw new Error(
-      'Bu brauzer WebUSB ni qo‘llab-quvvatlamaydi.'
-    );
+    throw new Error("Bu brauzer WebUSB ni qo‘llab-quvvatlamaydi.");
   }
 
   /*
@@ -133,8 +115,8 @@ async function connectUSB() {
     usbDevice = null;
 
     throw new Error(
-      'USB printerga kirish rad etildi (Access denied). ' +
-      'Windows printer drayveri USB qurilmani egallab turgan bo‘lishi mumkin.'
+      "USB printerga kirish rad etildi (Access denied). " +
+        "Windows printer drayveri USB qurilmani egallab turgan bo‘lishi mumkin."
     );
   }
 
@@ -147,23 +129,16 @@ async function connectUSB() {
       xatosi chiqishi mumkin edi. Qurilma o'zi
       e'lon qilgan birinchi konfiguratsiyani olamiz.
     */
-    const firstConfig =
-      usbDevice.configurations?.[0];
+    const firstConfig = usbDevice.configurations?.[0];
 
-    await usbDevice.selectConfiguration(
-      firstConfig?.configurationValue || 1
-    );
+    await usbDevice.selectConfiguration(firstConfig?.configurationValue || 1);
   }
 
-  const endpoint = findUsbOutputEndpoint(
-    usbDevice
-  );
+  const endpoint = findUsbOutputEndpoint(usbDevice);
 
-  usbInterfaceNumber =
-    endpoint.interfaceNumber;
+  usbInterfaceNumber = endpoint.interfaceNumber;
 
-  usbEndpointNumber =
-    endpoint.endpointNumber;
+  usbEndpointNumber = endpoint.endpointNumber;
 
   /*
     BUG FIX: WebUSB spetsifikatsiyasiga ko'ra
@@ -177,9 +152,7 @@ async function connectUSB() {
   */
 
   try {
-    await usbDevice.claimInterface(
-      usbInterfaceNumber
-    );
+    await usbDevice.claimInterface(usbInterfaceNumber);
   } catch (error) {
     try {
       await usbDevice.close();
@@ -192,8 +165,8 @@ async function connectUSB() {
     usbEndpointNumber = null;
 
     throw new Error(
-      'USB printer interfeysini egallab bo‘lmadi. ' +
-      'Windows printer drayveri USB interfeysni ishlatayotgan bo‘lishi mumkin.'
+      "USB printer interfeysini egallab bo‘lmadi. " +
+        "Windows printer drayveri USB interfeysni ishlatayotgan bo‘lishi mumkin."
     );
   }
 
@@ -205,9 +178,7 @@ async function connectUSB() {
       );
     } catch (error) {
       try {
-        await usbDevice.releaseInterface(
-          usbInterfaceNumber
-        );
+        await usbDevice.releaseInterface(usbInterfaceNumber);
         await usbDevice.close();
       } catch {
         // ignore
@@ -218,14 +189,14 @@ async function connectUSB() {
       usbEndpointNumber = null;
 
       throw new Error(
-        'USB printerning alternate interfeysini tanlab bo‘lmadi.'
+        "USB printerning alternate interfeysini tanlab bo‘lmadi."
       );
     }
   }
 
-  connectionType = 'usb';
+  connectionType = "usb";
 
-  console.log('USB printer ulandi:', {
+  console.log("USB printer ulandi:", {
     vendorId: usbDevice.vendorId,
     productId: usbDevice.productId,
     productName: usbDevice.productName,
@@ -244,9 +215,7 @@ async function connectUSB() {
 
 async function connectSerial(baudRate = 9600) {
   if (!isWebSerialSupported()) {
-    throw new Error(
-      'Bu brauzer Web Serial API ni qo‘llab-quvvatlamaydi.'
-    );
+    throw new Error("Bu brauzer Web Serial API ni qo‘llab-quvvatlamaydi.");
   }
 
   /*
@@ -259,21 +228,17 @@ async function connectSerial(baudRate = 9600) {
     baudRate: Number(baudRate) || 9600,
     dataBits: 8,
     stopBits: 1,
-    parity: 'none',
-    flowControl: 'none',
+    parity: "none",
+    flowControl: "none",
   });
 
   serialPort = port;
 
-  serialWriter =
-    serialPort.writable.getWriter();
+  serialWriter = serialPort.writable.getWriter();
 
-  connectionType = 'serial';
+  connectionType = "serial";
 
-  console.log(
-    'Serial printer ulandi:',
-    serialPort
-  );
+  console.log("Serial printer ulandi:", serialPort);
 
   return serialPort;
 }
@@ -282,13 +247,8 @@ async function connectSerial(baudRate = 9600) {
    MAIN CONNECT
 ========================================================= */
 
-export async function connectReceiptDevice(
-  options = {}
-) {
-  const {
-    baudRate = 9600,
-    connection = 'usb',
-  } = options;
+export async function connectReceiptDevice(options = {}) {
+  const { baudRate = 9600, connection = "usb" } = options;
 
   /*
     Agar avval ulangan bo'lsa qayta ulash shart emas.
@@ -302,10 +262,7 @@ export async function connectReceiptDevice(
     USB rejimi
   */
 
-  if (
-    connection === 'usb' ||
-    connection === 'webusb'
-  ) {
+  if (connection === "usb" || connection === "webusb") {
     return await connectUSB();
   }
 
@@ -313,17 +270,11 @@ export async function connectReceiptDevice(
     Serial rejimi
   */
 
-  if (
-    connection === 'serial' ||
-    connection === 'webserial'
-  ) {
+  if (connection === "serial" || connection === "webserial") {
     return await connectSerial(baudRate);
   }
 
-  throw new Error(
-    'Nomaʼlum printer ulanish turi: ' +
-      connection
-  );
+  throw new Error("Nomaʼlum printer ulanish turi: " + connection);
 }
 
 /* =========================================================
@@ -332,18 +283,13 @@ export async function connectReceiptDevice(
 
 export async function reconnectReceiptDevice() {
   if (!isWebUSBSupported()) {
-    throw new Error(
-      'WebUSB qo‘llab-quvvatlanmaydi.'
-    );
+    throw new Error("WebUSB qo‘llab-quvvatlanmaydi.");
   }
 
-  const devices =
-    await navigator.usb.getDevices();
+  const devices = await navigator.usb.getDevices();
 
   if (!devices.length) {
-    throw new Error(
-      'Oldin ruxsat berilgan USB printer topilmadi.'
-    );
+    throw new Error("Oldin ruxsat berilgan USB printer topilmadi.");
   }
 
   const device = devices[0];
@@ -353,26 +299,18 @@ export async function reconnectReceiptDevice() {
   await usbDevice.open();
 
   if (usbDevice.configuration === null) {
-    const firstConfig =
-      usbDevice.configurations?.[0];
+    const firstConfig = usbDevice.configurations?.[0];
 
-    await usbDevice.selectConfiguration(
-      firstConfig?.configurationValue || 1
-    );
+    await usbDevice.selectConfiguration(firstConfig?.configurationValue || 1);
   }
 
-  const endpoint =
-    findUsbOutputEndpoint(usbDevice);
+  const endpoint = findUsbOutputEndpoint(usbDevice);
 
-  usbInterfaceNumber =
-    endpoint.interfaceNumber;
+  usbInterfaceNumber = endpoint.interfaceNumber;
 
-  usbEndpointNumber =
-    endpoint.endpointNumber;
+  usbEndpointNumber = endpoint.endpointNumber;
 
-  await usbDevice.claimInterface(
-    usbInterfaceNumber
-  );
+  await usbDevice.claimInterface(usbInterfaceNumber);
 
   if (endpoint.alternateSetting !== 0) {
     await usbDevice.selectAlternateInterface(
@@ -381,7 +319,7 @@ export async function reconnectReceiptDevice() {
     );
   }
 
-  connectionType = 'usb';
+  connectionType = "usb";
 
   return usbDevice;
 }
@@ -391,28 +329,15 @@ export async function reconnectReceiptDevice() {
 ========================================================= */
 
 async function sendUSB(data) {
-  if (
-    !usbDevice ||
-    !usbDevice.opened
-  ) {
-    throw new Error(
-      'USB printer ulanmagan.'
-    );
+  if (!usbDevice || !usbDevice.opened) {
+    throw new Error("USB printer ulanmagan.");
   }
 
-  if (
-    usbInterfaceNumber === null ||
-    usbEndpointNumber === null
-  ) {
-    throw new Error(
-      'USB printer endpointi aniqlanmagan.'
-    );
+  if (usbInterfaceNumber === null || usbEndpointNumber === null) {
+    throw new Error("USB printer endpointi aniqlanmagan.");
   }
 
-  const bytes =
-    data instanceof Uint8Array
-      ? data
-      : new Uint8Array(data);
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
 
   /*
     Juda katta cheklarni bo'lib yuboramiz.
@@ -421,24 +346,13 @@ async function sendUSB(data) {
 
   const chunkSize = 1024;
 
-  for (
-    let offset = 0;
-    offset < bytes.length;
-    offset += chunkSize
-  ) {
-    const chunk =
-      bytes.slice(
-        offset,
-        Math.min(
-          offset + chunkSize,
-          bytes.length
-        )
-      );
-
-    await usbDevice.transferOut(
-      usbEndpointNumber,
-      chunk
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.slice(
+      offset,
+      Math.min(offset + chunkSize, bytes.length)
     );
+
+    await usbDevice.transferOut(usbEndpointNumber, chunk);
 
     /*
       Printerga juda tez yuborib yubormaslik uchun
@@ -455,15 +369,10 @@ async function sendUSB(data) {
 
 async function sendSerial(data) {
   if (!serialWriter) {
-    throw new Error(
-      'Serial printer ulanmagan.'
-    );
+    throw new Error("Serial printer ulanmagan.");
   }
 
-  const bytes =
-    data instanceof Uint8Array
-      ? data
-      : new Uint8Array(data);
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
 
   await serialWriter.write(bytes);
 }
@@ -473,19 +382,17 @@ async function sendSerial(data) {
 ========================================================= */
 
 export async function sendRaw(data) {
-  if (connectionType === 'usb') {
+  if (connectionType === "usb") {
     await sendUSB(data);
     return;
   }
 
-  if (connectionType === 'serial') {
+  if (connectionType === "serial") {
     await sendSerial(data);
     return;
   }
 
-  throw new Error(
-    'Printer ulanmagan.'
-  );
+  throw new Error("Printer ulanmagan.");
 }
 
 /* =========================================================
@@ -523,14 +430,9 @@ export async function disconnectReceiptDevice() {
 
   if (usbDevice) {
     try {
-      if (
-        usbDevice.opened &&
-        usbInterfaceNumber !== null
-      ) {
+      if (usbDevice.opened && usbInterfaceNumber !== null) {
         try {
-          await usbDevice.releaseInterface(
-            usbInterfaceNumber
-          );
+          await usbDevice.releaseInterface(usbInterfaceNumber);
         } catch {
           // ignore
         }
@@ -556,43 +458,35 @@ export async function disconnectReceiptDevice() {
 ========================================================= */
 
 export function getReceiptDeviceInfo() {
-  if (connectionType === 'usb') {
+  if (connectionType === "usb") {
     if (!usbDevice) {
       return null;
     }
 
     return {
-      type: 'usb',
+      type: "usb",
 
-      productName:
-        usbDevice.productName || '',
+      productName: usbDevice.productName || "",
 
-      manufacturerName:
-        usbDevice.manufacturerName || '',
+      manufacturerName: usbDevice.manufacturerName || "",
 
-      serialNumber:
-        usbDevice.serialNumber || '',
+      serialNumber: usbDevice.serialNumber || "",
 
-      vendorId:
-        usbDevice.vendorId,
+      vendorId: usbDevice.vendorId,
 
-      productId:
-        usbDevice.productId,
+      productId: usbDevice.productId,
 
-      interfaceNumber:
-        usbInterfaceNumber,
+      interfaceNumber: usbInterfaceNumber,
 
-      endpointNumber:
-        usbEndpointNumber,
+      endpointNumber: usbEndpointNumber,
     };
   }
 
-  if (connectionType === 'serial') {
+  if (connectionType === "serial") {
     return {
-      type: 'serial',
+      type: "serial",
 
-      baudRate:
-        serialPort?.getInfo?.() || null,
+      baudRate: serialPort?.getInfo?.() || null,
     };
   }
 
@@ -608,58 +502,23 @@ const GS = 0x1d;
 const LF = 0x0a;
 
 const CMD = {
-  INIT: new Uint8Array([
-    ESC,
-    0x40,
-  ]),
+  INIT: new Uint8Array([ESC, 0x40]),
 
-  ALIGN_LEFT: new Uint8Array([
-    ESC,
-    0x61,
-    0x00,
-  ]),
+  ALIGN_LEFT: new Uint8Array([ESC, 0x61, 0x00]),
 
-  ALIGN_CENTER: new Uint8Array([
-    ESC,
-    0x61,
-    0x01,
-  ]),
+  ALIGN_CENTER: new Uint8Array([ESC, 0x61, 0x01]),
 
-  ALIGN_RIGHT: new Uint8Array([
-    ESC,
-    0x61,
-    0x02,
-  ]),
+  ALIGN_RIGHT: new Uint8Array([ESC, 0x61, 0x02]),
 
-  BOLD_ON: new Uint8Array([
-    ESC,
-    0x45,
-    0x01,
-  ]),
+  BOLD_ON: new Uint8Array([ESC, 0x45, 0x01]),
 
-  BOLD_OFF: new Uint8Array([
-    ESC,
-    0x45,
-    0x00,
-  ]),
+  BOLD_OFF: new Uint8Array([ESC, 0x45, 0x00]),
 
-  DOUBLE_ON: new Uint8Array([
-    GS,
-    0x21,
-    0x11,
-  ]),
+  DOUBLE_ON: new Uint8Array([GS, 0x21, 0x11]),
 
-  NORMAL_SIZE: new Uint8Array([
-    GS,
-    0x21,
-    0x00,
-  ]),
+  NORMAL_SIZE: new Uint8Array([GS, 0x21, 0x00]),
 
-  CUT: new Uint8Array([
-    GS,
-    0x56,
-    0x00,
-  ]),
+  CUT: new Uint8Array([GS, 0x56, 0x00]),
 };
 
 /* =========================================================
@@ -675,9 +534,7 @@ function encodeText(text) {
     Oddiy lotincha o'zbekcha matnlar uchun ishlaydi.
   */
 
-  return new TextEncoder().encode(
-    String(text ?? '')
-  );
+  return new TextEncoder().encode(String(text ?? ""));
 }
 
 /* =========================================================
@@ -685,15 +542,9 @@ function encodeText(text) {
 ========================================================= */
 
 function concatBytes(...arrays) {
-  const totalLength =
-    arrays.reduce(
-      (sum, arr) =>
-        sum + arr.length,
-      0
-    );
+  const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
 
-  const result =
-    new Uint8Array(totalLength);
+  const result = new Uint8Array(totalLength);
 
   let offset = 0;
 
@@ -710,12 +561,7 @@ function concatBytes(...arrays) {
 ========================================================= */
 
 async function writeText(text) {
-  await sendRaw(
-    concatBytes(
-      encodeText(text),
-      new Uint8Array([LF])
-    )
-  );
+  await sendRaw(concatBytes(encodeText(text), new Uint8Array([LF])));
 }
 
 /* =========================================================
@@ -729,299 +575,244 @@ function createQRCode(data) {
     Model 2 QR
   */
 
-  const storeLength =
-    bytes.length + 3;
+  const storeLength = bytes.length + 3;
 
-  const pL =
-    storeLength & 0xff;
+  const pL = storeLength & 0xff;
 
-  const pH =
-    (storeLength >> 8) & 0xff;
+  const pH = (storeLength >> 8) & 0xff;
 
-  const model =
-    new Uint8Array([
-      GS,
-      0x28,
-      0x6b,
-      0x04,
-      0x00,
-      0x31,
-      0x41,
-      0x32,
-      0x00,
-    ]);
+  const model = new Uint8Array([
+    GS,
+    0x28,
+    0x6b,
+    0x04,
+    0x00,
+    0x31,
+    0x41,
+    0x32,
+    0x00,
+  ]);
 
   /*
     QR size
   */
 
-  const size =
-    new Uint8Array([
-      GS,
-      0x28,
-      0x6b,
-      0x03,
-      0x00,
-      0x31,
-      0x43,
-      0x06,
-    ]);
+  const size = new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x06]);
 
   /*
     Error correction M
   */
 
-  const correction =
-    new Uint8Array([
-      GS,
-      0x28,
-      0x6b,
-      0x03,
-      0x00,
-      0x31,
-      0x45,
-      0x31,
-    ]);
+  const correction = new Uint8Array([
+    GS,
+    0x28,
+    0x6b,
+    0x03,
+    0x00,
+    0x31,
+    0x45,
+    0x31,
+  ]);
 
   /*
     Store QR data
   */
 
-  const storeHeader =
-    new Uint8Array([
-      GS,
-      0x28,
-      0x6b,
-      pL,
-      pH,
-      0x31,
-      0x50,
-      0x30,
-    ]);
+  const storeHeader = new Uint8Array([
+    GS,
+    0x28,
+    0x6b,
+    pL,
+    pH,
+    0x31,
+    0x50,
+    0x30,
+  ]);
 
   /*
     Print QR
   */
 
-  const print =
-    new Uint8Array([
-      GS,
-      0x28,
-      0x6b,
-      0x03,
-      0x00,
-      0x31,
-      0x51,
-      0x30,
-    ]);
+  const print = new Uint8Array([GS, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]);
 
-  return concatBytes(
-    model,
-    size,
-    correction,
-    storeHeader,
-    bytes,
-    print
-  );
+  return concatBytes(model, size, correction, storeHeader, bytes, print);
 }
 
 /* =========================================================
    PRINT RECEIPT
 ========================================================= */
 
-export async function printReceiptToDevice(
-  sale
-) {
+export async function printReceiptToDevice(sale) {
   if (!isReceiptDeviceConnected()) {
-    throw new Error(
-      'Avval chek apparatini ulang.'
-    );
+    throw new Error("Avval chek apparatini ulang.");
   }
 
-  const items =
-    Array.isArray(sale?.items)
-      ? sale.items
-      : [];
+  const items = Array.isArray(sale?.items) ? sale.items : [];
 
-  const total =
-    Number(sale?.total || 0);
+  const total = Number(sale?.total || 0);
 
-  const createdAt =
-    sale?.created_at
-      ? new Date(sale.created_at)
-      : new Date();
+  const createdAt = sale?.created_at ? new Date(sale.created_at) : new Date();
 
-  const dateText =
-    createdAt.toLocaleString(
-      'uz-UZ'
-    );
+  const dateText = createdAt.toLocaleString("uz-UZ");
 
   /*
     QR ichiga oddiy ma'lumot.
   */
 
-  const qrData =
-    JSON.stringify({
-      total,
-      type: sale?.type || 'naqt',
-      date: dateText,
-    });
+  const qrData = JSON.stringify({
+    total,
+    type: sale?.type || "naqt",
+    date: dateText,
+  });
 
   /*
     INIT
   */
 
-  await sendRaw(
-    CMD.INIT
-  );
+  await sendRaw(CMD.INIT);
 
   /*
     CENTER
   */
 
-  await sendRaw(
-    CMD.ALIGN_CENTER
-  );
+  await sendRaw(CMD.ALIGN_CENTER);
 
-  await sendRaw(
-    CMD.BOLD_ON
-  );
+  await sendRaw(CMD.BOLD_ON);
 
-  await writeText(
-    'MARKETBAZA'
-  );
+  await writeText("MarketBaza");
 
-  await sendRaw(
-    CMD.BOLD_OFF
-  );
+  await sendRaw(CMD.BOLD_OFF);
 
-  await writeText(
-    'CHEK'
-  );
+  await writeText("CHEK");
 
-  await writeText(
-    dateText
-  );
+  await writeText(dateText);
 
-  await writeText(
-    '------------------------------'
-  );
+  await writeText("------------------------------");
 
   /*
     LEFT
   */
 
-  await sendRaw(
-    CMD.ALIGN_LEFT
-  );
+  await sendRaw(CMD.ALIGN_LEFT);
 
   for (const item of items) {
-    const name =
-      String(
-        item?.name || 'Mahsulot'
-      );
+    const name = String(item?.name || "Mahsulot");
 
-    const qty =
-      Number(
-        item?.qty || 0
-      );
+    const qty = Number(item?.qty || 0);
 
-    const price =
-      Number(
-        item?.price || 0
-      );
+    const price = Number(item?.price || 0);
 
-    const sum =
-      qty * price;
+    const sum = qty * price;
 
-    await writeText(
-      name
-    );
+    await writeText(name);
 
-    await writeText(
-      `${qty} x ${formatMoney(price)} = ${formatMoney(sum)}`
-    );
+    await writeText(`${qty} x ${formatMoney(price)} = ${formatMoney(sum)}`);
   }
 
-  await writeText(
-    '------------------------------'
-  );
+  await writeText("------------------------------");
 
   /*
     TOTAL
   */
 
-  await sendRaw(
-    CMD.BOLD_ON
-  );
+  await sendRaw(CMD.BOLD_ON);
 
-  await sendRaw(
-    CMD.DOUBLE_ON
-  );
+  await sendRaw(CMD.DOUBLE_ON);
 
-  await writeText(
-    `JAMI: ${formatMoney(total)}`
-  );
+  await writeText(`JAMI: ${formatMoney(total)}`);
 
-  await sendRaw(
-    CMD.NORMAL_SIZE
-  );
+  await sendRaw(CMD.NORMAL_SIZE);
 
-  await sendRaw(
-    CMD.BOLD_OFF
-  );
+  await sendRaw(CMD.BOLD_OFF);
 
-  await writeText(
-    `To'lov: ${sale?.type || 'naqt'}`
-  );
+  await writeText(`To'lov: ${sale?.type || "naqt"}`);
 
   /*
     QR
   */
 
-  await sendRaw(
-    CMD.ALIGN_CENTER
-  );
+  await sendRaw(CMD.ALIGN_CENTER);
 
-  await writeText(
-    'QR KOD'
-  );
+  await writeText("QR KOD");
 
-  await sendRaw(
-    createQRCode(qrData)
-  );
+  await sendRaw(createQRCode(qrData));
 
-  await writeText(
-    'Rahmat!'
-  );
+  await writeText("Rahmat!");
 
   /*
     PAPER FEED
   */
 
-  await sendRaw(
-    new Uint8Array([
-      LF,
-      LF,
-      LF,
-      LF,
-    ])
-  );
+  await sendRaw(new Uint8Array([LF, LF, LF, LF]));
 
   /*
     CUT
   */
 
   try {
-    await sendRaw(
-      CMD.CUT
-    );
+    await sendRaw(CMD.CUT);
   } catch {
     /*
       Ba'zi arzon printerlarda
       cutter bo'lmaydi.
     */
   }
+}
+
+/* =========================================================
+   BUILD FULL RECEIPT AS ONE BYTE BUFFER
+   (mahalliy print xizmati — server.js — uchun: bitta HTTP
+   so'rovda butun chekni base64 qilib yuborish kerak, shuning
+   uchun sendRaw() bilan bo'lib-bo'lib yuborish o'rniga bitta
+   Uint8Array yig'amiz. printReceiptToDevice() ga tegilmadi.)
+========================================================= */
+
+export function buildReceiptEscPosBytes(sale) {
+  const items = Array.isArray(sale?.items) ? sale.items : [];
+  const total = Number(sale?.total || 0);
+  const createdAt = sale?.created_at ? new Date(sale.created_at) : new Date();
+  const dateText = createdAt.toLocaleString("uz-UZ");
+
+  const qrData = JSON.stringify({
+    total,
+    type: sale?.type || "naqt",
+    date: dateText,
+  });
+
+  const parts = [];
+  const pushText = (text) =>
+    parts.push(concatBytes(encodeText(text), new Uint8Array([LF])));
+
+  parts.push(CMD.INIT, CMD.ALIGN_CENTER, CMD.BOLD_ON);
+  pushText("MarketBaza");
+  parts.push(CMD.BOLD_OFF);
+  pushText("CHEK");
+  pushText(dateText);
+  pushText("------------------------------");
+  parts.push(CMD.ALIGN_LEFT);
+
+  for (const item of items) {
+    const name = String(item?.name || "Mahsulot");
+    const qty = Number(item?.qty || 0);
+    const price = Number(item?.price || 0);
+    const sum = qty * price;
+    pushText(name);
+    pushText(`${qty} x ${formatMoney(price)} = ${formatMoney(sum)}`);
+  }
+
+  pushText("------------------------------");
+  parts.push(CMD.BOLD_ON, CMD.DOUBLE_ON);
+  pushText(`JAMI: ${formatMoney(total)}`);
+  parts.push(CMD.NORMAL_SIZE, CMD.BOLD_OFF);
+  pushText(`To'lov: ${sale?.type || "naqt"}`);
+  parts.push(CMD.ALIGN_CENTER);
+  pushText("QR KOD");
+  parts.push(createQRCode(qrData));
+  pushText("Rahmat!");
+  parts.push(new Uint8Array([LF, LF, LF, LF]));
+  parts.push(CMD.CUT);
+
+  return concatBytes(...parts);
 }
 
 /* =========================================================
@@ -1032,12 +823,12 @@ export async function testReceiptDevice() {
   const sale = {
     items: [
       {
-        name: 'Non',
+        name: "Non",
         price: 4000,
         qty: 2,
       },
       {
-        name: 'Sut 1L',
+        name: "Sut 1L",
         price: 12000,
         qty: 1,
       },
@@ -1049,17 +840,14 @@ export async function testReceiptDevice() {
 
     negotiated: false,
 
-    type: 'naqt',
+    type: "naqt",
 
-    status: 'yopilgan',
+    status: "yopilgan",
 
-    created_at:
-      new Date().toISOString(),
+    created_at: new Date().toISOString(),
   };
 
-  await printReceiptToDevice(
-    sale
-  );
+  await printReceiptToDevice(sale);
 }
 
 /* =========================================================
@@ -1067,11 +855,7 @@ export async function testReceiptDevice() {
 ========================================================= */
 
 function formatMoney(value) {
-  return Number(
-    value || 0
-  ).toLocaleString(
-    'uz-UZ'
-  ) + ' so‘m';
+  return Number(value || 0).toLocaleString("uz-UZ") + " so‘m";
 }
 
 /* =========================================================
@@ -1079,63 +863,38 @@ function formatMoney(value) {
 ========================================================= */
 
 function sleep(ms) {
-  return new Promise(
-    (resolve) =>
-      setTimeout(resolve, ms)
-  );
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /* =========================================================
    USB DISCONNECT EVENT
 ========================================================= */
 
-if (
-  typeof navigator !== 'undefined' &&
-  navigator.usb
-) {
-  navigator.usb.addEventListener(
-    'disconnect',
-    (event) => {
-      if (
-        usbDevice &&
-        event.device === usbDevice
-      ) {
-        usbDevice = null;
-        usbInterfaceNumber = null;
-        usbEndpointNumber = null;
-        connectionType = null;
+if (typeof navigator !== "undefined" && navigator.usb) {
+  navigator.usb.addEventListener("disconnect", (event) => {
+    if (usbDevice && event.device === usbDevice) {
+      usbDevice = null;
+      usbInterfaceNumber = null;
+      usbEndpointNumber = null;
+      connectionType = null;
 
-        console.log(
-          'USB printer uzildi.'
-        );
-      }
+      console.log("USB printer uzildi.");
     }
-  );
+  });
 }
 
 /* =========================================================
    SERIAL DISCONNECT EVENT
 ========================================================= */
 
-if (
-  typeof navigator !== 'undefined' &&
-  navigator.serial
-) {
-  navigator.serial.addEventListener(
-    'disconnect',
-    (event) => {
-      if (
-        serialPort &&
-        event.target === serialPort
-      ) {
-        serialPort = null;
-        serialWriter = null;
-        connectionType = null;
+if (typeof navigator !== "undefined" && navigator.serial) {
+  navigator.serial.addEventListener("disconnect", (event) => {
+    if (serialPort && event.target === serialPort) {
+      serialPort = null;
+      serialWriter = null;
+      connectionType = null;
 
-        console.log(
-          'Serial printer uzildi.'
-        );
-      }
+      console.log("Serial printer uzildi.");
     }
-  );
+  });
 }

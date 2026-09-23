@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { fmt, fmtDate } from '../lib/format';
 
 export default function Credit() {
-  const { sales, markCreditPaid } = useData();
+  const { sales, markCreditPaid, clearCreditArchive } = useData();
   const [view, setView] = useState('active');
   const [archiveQ, setArchiveQ] = useState('');
 
@@ -18,6 +18,12 @@ export default function Credit() {
   if (archiveQ) {
     const q = archiveQ.toLowerCase();
     archiveList = archiveList.filter((s) => (s.buyer_name || '').toLowerCase().includes(q) || (s.buyer_phone || '').toLowerCase().includes(q));
+  }
+
+  async function handleClearArchive() {
+    if (!paid.length) return;
+    if (!confirm(`Arxivdagi barcha ${paid.length} ta to'langan nasiyani butunlay o'chirasizmi? Bu amalni ortga qaytarib bo'lmaydi.`)) return;
+    await clearCreditArchive();
   }
 
   return (
@@ -60,6 +66,9 @@ export default function Credit() {
         <>
           <div className="filter-bar">
             <input className="search-input" placeholder="Klient ismi yoki telefoni bo'yicha qidirish..." value={archiveQ} onChange={(e) => setArchiveQ(e.target.value)} />
+            <button className="btn btn-outline btn-sm" style={{ marginLeft: 'auto' }} onClick={handleClearArchive} disabled={!paid.length}>
+              Arxivni tozalash
+            </button>
           </div>
           <div className="card"><div className="table-wrap"><table><tbody>
             <tr><th>Sotilgan sana</th><th>Xaridor</th><th>Telefon</th><th>Summa</th><th>To'langan sana</th><th>Holati</th></tr>

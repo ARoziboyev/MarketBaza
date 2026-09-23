@@ -26,12 +26,33 @@ const PORT = 17891;
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-    ],
+    origin: (origin, callback) => {
+      // Brauzerdan tashqarida (masalan curl/Postman) kelgan so'rovlarda
+      // "origin" umuman yo'q bo'ladi - bunga ruxsat beramiz.
+      if (!origin) return callback(null, true);
+
+      const allowedExact = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        // O'zingizning custom domeningiz bo'lsa, shu yerga qo'shing:
+        // "https://marketbaza.uz",
+      ];
+
+      let hostname = "";
+      try {
+        hostname = new URL(origin).hostname;
+      } catch {
+        hostname = "";
+      }
+
+      const isAllowed =
+        allowedExact.includes(origin) ||
+        hostname.endsWith(".vercel.app");
+
+      callback(isAllowed ? null : new Error("CORS: ruxsat etilmagan manzil - " + origin), isAllowed);
+    },
   })
 );
 
